@@ -115,7 +115,8 @@ inline /* static */ void LZHLEncoderStat::_addGroup( int* groups, int group, int
     assert( nBits <= 8 );
 
     //Bubble sort
-    for( int j=group; j > 0 && nBits < groups[ j - 1 ] ; --j )
+    int j;
+    for( j=group; j > 0 && nBits < groups[ j - 1 ] ; --j )
         groups[ j ] = groups[ j - 1 ];
     groups[ j ] = nBits;
     }
@@ -179,7 +180,8 @@ void LZHLEncoderStat::calcStat( int* groups )
             nn += s[ pos + i ].n;
 
         int nItems15 = NHUFFSYMBOLS - ( pos + i );
-        for( int nBits15=0 ;; ++nBits15 )
+        int nBits15;
+        for( nBits15=0 ;; ++nBits15 )
             if( 1 << nBits15 >= nItems15 )
                 break;
         
@@ -203,7 +205,7 @@ void LZHLEncoderStat::calcStat( int* groups )
     _addGroup( groups, 15, bestNBits15 );
 
     pos = 0;
-    for( j=0; j < 16 ; ++j )
+    for( int j=0; j < 16 ; ++j )
         {
         int nBits = groups[ j ];
 
@@ -279,7 +281,7 @@ void LZHLEncoder::putMatch( const BYTE* src, size_t nRaw, size_t matchOver, size
     };
 
     if( matchOver < 8 )
-        _put( 256 + matchOver );
+        _put( (unsigned short)(256 + matchOver) );
     else if( matchOver < 38 )
         {
         matchOver -= 8;
@@ -442,9 +444,10 @@ BOOL LZHLDecompressor::decompress( BYTE* dst, size_t* dstSz, const BYTE* src, si
 
             int lastNBits = 0;
             int pos = 0;
-            for( i=0; i < 16 ; ++i )
+            for( int i=0; i < 16 ; ++i )
                 {
-                for( int n=0 ;; ++n )
+                int n;
+                for( n=0 ;; ++n )
                     if( _get( src, endSrc, 1 ) )
                         break;
                 lastNBits += n;

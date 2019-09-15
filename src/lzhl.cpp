@@ -12,7 +12,7 @@
  *     not be misrepresented as being the original software.
  */
 
-#include "lzhl.h"
+#include <lzhl/lzhl.h>
 #define LZHLINTERNAL
 #include "_huff.h"
 #include "_lz.h"

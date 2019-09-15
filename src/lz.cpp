@@ -73,7 +73,7 @@ inline int LZBuffer::_nMatch( int pos /*already wrapped*/, const BYTE* p, int nL
                 return i - begin;
         int shift = LZBUFSIZE - begin;
         int n = nLimit - ( LZBUFSIZE - begin );
-        for( i=0; i < n ; ++i )
+        for( int i=0; i < n ; ++i )
             if( buf[ i ] != p[ shift + i ] )
                 return shift + i;
         return nLimit;
@@ -182,7 +182,8 @@ size_t LZHLCompressor::compress( BYTE* dst, const BYTE* src, size_t sz )
                     {
                     assert( matchLen != 0 );
                     int xtraMatchLimit = min( LZMIN + LZHLEncoder::maxMatchOver - matchLen, srcLeft - nRaw - matchLen );
-                    for( int xtraMatch = 0; xtraMatch < xtraMatchLimit ; ++xtraMatch )
+                    int xtraMatch;
+                    for( xtraMatch = 0; xtraMatch < xtraMatchLimit ; ++xtraMatch )
                         {
                         if( src[ nRaw + xtraMatch ] != src[ nRaw + xtraMatch + matchLen ] )
                             break;//for( xtraMatch )
@@ -197,7 +198,8 @@ size_t LZHLCompressor::compress( BYTE* dst, const BYTE* src, size_t sz )
                     int xtraMatchLimit = min( LZMIN + LZHLEncoder::maxMatchOver - matchLen, nRaw );
                     int d = (int)_distance( bufPos - hashPos );
                     xtraMatchLimit = min( min( xtraMatchLimit, d - matchLen ), LZBUFSIZE - d );
-                    for( int xtraMatch = 0; xtraMatch < xtraMatchLimit ; ++xtraMatch )
+                    int xtraMatch;
+                    for( xtraMatch = 0; xtraMatch < xtraMatchLimit ; ++xtraMatch )
                         {
                         if( buf[ _wrap( hashPos - xtraMatch - 1 ) ] != src[ nRaw - xtraMatch - 1 ] )
                             break;//for( xtraMatch )
