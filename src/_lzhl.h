@@ -33,7 +33,7 @@
 #endif
 
 #ifndef INT32
-#define INT32 signed long
+#define INT32 signed int
 #endif
 
 #ifndef UINT16
@@ -41,7 +41,7 @@
 #endif
 
 #ifndef UINT32
-#define UINT32 unsigned long
+#define UINT32 unsigned int
 #endif
 
 #ifndef BOOL
@@ -63,6 +63,11 @@
 
 #ifdef _MSC_VER
 #pragma intrinsic( memcpy, memset, _rotl )
+#define ROTL( x, y ) _rotl( x, y )
+#elif defined __WATCOMC__
+unsigned int _rotl(unsigned int a, unsigned int b);
+#pragma aux _rotl = \
+    "rol eax, cl" parm[eax][ecx] value[eax] modify[ecx]
 #define ROTL( x, y ) _rotl( x, y )
 #else
 #define ROTL( x, y ) ( ( (x) << (y) ) | ( (x) >> (32-(y)) ) )
