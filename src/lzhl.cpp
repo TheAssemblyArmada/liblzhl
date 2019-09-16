@@ -18,39 +18,44 @@
 #include "_lz.h"
 
 extern "C" {
-LZHL_CHANDLE LZHLCreateCompressor( void )
+LZHL_CHANDLE LZHL_ABI LZHL_EXPORT LZHLCreateCompressor( void )
     {
     return (LZHL_CHANDLE)new LZHLCompressor();
     }
 
-size_t LZHLCompressorCalcMaxBuf( size_t sz )   
+size_t LZHL_ABI LZHL_EXPORT LZHLCompressorCalcMaxBuf( size_t sz )
     {
     return LZHLCompressor::calcMaxBuf( sz );
     }
 
-size_t LZHLCompress( LZHL_CHANDLE compressor, void* dst, const void* src, size_t srcSz )
+size_t LZHL_ABI LZHL_EXPORT LZHLCompress( LZHL_CHANDLE compressor, void* dst, const void* src, size_t srcSz )
     {
     return ((LZHLCompressor*)compressor)->compress( (BYTE*)dst, (const BYTE*)src, srcSz );
     }
 
-void LZHLDestroyCompressor( LZHL_CHANDLE compressor )
+void LZHL_ABI LZHL_EXPORT LZHLDestroyCompressor( LZHL_CHANDLE compressor )
     {
     delete (LZHLCompressor*)compressor;
     }
 
 //*****************************************************************************
 
-LZHL_DHANDLE LZHLCreateDecompressor( void )
+LZHL_DHANDLE LZHL_ABI LZHL_EXPORT LZHLCreateDecompressor( void )
     {
     return (LZHL_DHANDLE)new LZHLDecompressor();
     }
 
-int LZHLDecompress( LZHL_DHANDLE decompressor, void* dst, size_t* dstSz, void* src, size_t* srcSz )
+int  LZHL_ABI LZHL_EXPORT LZHLDecompress( LZHL_DHANDLE decompressor, void* dst, size_t* dstSz, void* src, size_t* srcSz )
     {
     return ((LZHLDecompressor*)decompressor)->decompress( (BYTE*)dst, dstSz, (BYTE*)src, srcSz );
     }
 
-void LZHLDestroyDecompressor( LZHL_DHANDLE decompressor )
+void LZHL_ABI LZHL_EXPORT LZHLDecompressReset(LZHL_DHANDLE decompressor)
+{
+    //(LZHLDecompressor*)decompressor;
+}
+
+void LZHL_ABI LZHL_EXPORT LZHLDestroyDecompressor( LZHL_DHANDLE decompressor )
     {
     delete (LZHLDecompressor*)decompressor;
     }

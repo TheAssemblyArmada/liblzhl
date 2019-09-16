@@ -38,7 +38,7 @@ inline int operator <( const HuffStatTmpStruct& a, const HuffStatTmpStruct& b )
     return cmpHuffStatTmpStruct( a, b ) < 0;
     }
 
-static int __cdecl _cmpStat( const void* a_, const void* b_ )
+static int _cmpStat( const void* a_, const void* b_ )
     {
     HuffStatTmpStruct* a = (HuffStatTmpStruct*)a_;
     HuffStatTmpStruct* b = (HuffStatTmpStruct*)b_;
