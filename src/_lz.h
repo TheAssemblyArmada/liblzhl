@@ -47,6 +47,7 @@ class LZBuffer
     inline void _toBuf( const BYTE*, size_t sz );
     inline void _bufCpy( BYTE* dst, int pos, size_t sz );
     inline int _nMatch( int pos, const BYTE* p, int nLimit );
+    inline void reset_lzbuffer() { bufPos = 0; }
     };
 
 //*****************************************************************************
@@ -83,6 +84,7 @@ class LZHLDecompressor : private LZBuffer, private LZHLDecoderStat
     LZHLDecompressor();
     ~LZHLDecompressor();
     BOOL decompress( BYTE* dst, size_t* dstSz, const BYTE* src, size_t* srcSz );
+    void reset_decompressor();
 
     private:
     inline int _get( const BYTE*& src, const BYTE* srcEnd, int n );

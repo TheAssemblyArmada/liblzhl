@@ -43,6 +43,7 @@ class HuffStat
 
     protected:
     int makeSortedTmp( HuffStatTmpStruct* );
+    void reset_huffstat();
     };
 
 class LZHLEncoderStat : public HuffStat
@@ -119,6 +120,9 @@ class LZHLDecoderStat : public HuffStat
     public:
     LZHLDecoderStat();
     ~LZHLDecoderStat();
+
+    protected:
+    void reset_lzhldecoderstat();
     };
 
 //*****************************************************************************

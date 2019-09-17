@@ -52,7 +52,7 @@ int  LZHL_ABI LZHLDecompress( LZHL_DHANDLE decompressor, void* dst, size_t* dstS
 
 void LZHL_ABI LZHLDecompressReset(LZHL_DHANDLE decompressor)
 {
-    //(LZHLDecompressor*)decompressor;
+    ((LZHLDecompressor*)decompressor)->reset_decompressor();
 }
 
 void LZHL_ABI LZHLDestroyDecompressor( LZHL_DHANDLE decompressor )

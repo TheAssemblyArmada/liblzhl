@@ -90,6 +90,11 @@ int HuffStat::makeSortedTmp( HuffStatTmpStruct* s )
     return total;
     }
 
+void HuffStat::reset_huffstat()
+    {
+    memset( stat, 0, sizeof(HUFFINT) * NHUFFSYMBOLS );
+    }
+
 //*****************************************************************************
 
 LZHLEncoderStat::LZHLEncoderStat()
@@ -350,6 +355,13 @@ LZHLDecoderStat::~LZHLDecoderStat()
     delete [] symbolTable;
     }
 
+void LZHLDecoderStat::reset_lzhldecoderstat()
+    {
+    memcpy(symbolTable, symbolTable0, sizeof(HUFFINT) * NHUFFSYMBOLS);
+    memcpy(groupTable, groupTable0, sizeof(Group) * 16);
+    reset_huffstat();
+    }
+
 LZHLDecoderStat::Group LZHLDecoderStat::groupTable0[ 16 ]
  =  {
     #include "hdec_g.tbl"
@@ -541,4 +553,12 @@ BOOL LZHLDecompressor::decompress( BYTE* dst, size_t* dstSz, const BYTE* src, si
         *srcSz -= src - startSrc;
 
 	return TRUE;
+    }
+
+    void LZHLDecompressor::reset_decompressor()
+    {
+        bits = 0;
+        nBits = 0;
+        reset_lzbuffer();
+        reset_lzhldecoderstat();
     }
