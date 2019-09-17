@@ -1,0 +1,11 @@
+{
+    global: LZHLCreateCompressor;
+            LZHLCompressorCalcMaxBuf;
+            LZHLCompress;
+            LZHLDestroyCompressor;
+            LZHLCreateDecompressor;
+            LZHLDecompress;
+            LZHLDecompressReset;
+            LZHLDestroyDecompressor;
+    local: *;
+};

@@ -36,25 +36,19 @@ typedef struct { int _; }* LZHL_DHANDLE;
 #define LZHL_ABI __cdecl
 #endif
 
-#ifdef LZHL_SHARED
-#define LZHL_EXPORT __attribute__(visibility("default"))
-#else
-#define LZHL_EXPORT
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-LZHL_CHANDLE LZHL_ABI LZHL_EXPORT LZHLCreateCompressor( void );
-size_t LZHL_ABI LZHL_EXPORT LZHLCompressorCalcMaxBuf( size_t );
-size_t LZHL_ABI LZHL_EXPORT LZHLCompress( LZHL_CHANDLE, void* dst, const void* src, size_t srcSz );
-void LZHL_ABI LZHL_EXPORT LZHLDestroyCompressor( LZHL_CHANDLE );
+LZHL_CHANDLE LZHL_ABI LZHLCreateCompressor( void );
+size_t LZHL_ABI LZHLCompressorCalcMaxBuf( size_t );
+size_t LZHL_ABI LZHLCompress( LZHL_CHANDLE, void* dst, const void* src, size_t srcSz );
+void LZHL_ABI LZHLDestroyCompressor( LZHL_CHANDLE );
 
-LZHL_DHANDLE LZHL_ABI LZHL_EXPORT LZHLCreateDecompressor( void );
-int  LZHL_ABI LZHL_EXPORT LZHLDecompress( LZHL_DHANDLE, void* dst, size_t* dstSz, void* src, size_t* srcSz );
-void LZHL_ABI LZHL_EXPORT LZHLDecompressReset( LZHL_DHANDLE );
-void LZHL_ABI LZHL_EXPORT LZHLDestroyDecompressor( LZHL_DHANDLE );
+LZHL_DHANDLE LZHL_ABI LZHLCreateDecompressor( void );
+int  LZHL_ABI LZHLDecompress( LZHL_DHANDLE, void* dst, size_t* dstSz, void* src, size_t* srcSz );
+void LZHL_ABI LZHLDecompressReset( LZHL_DHANDLE );
+void LZHL_ABI LZHLDestroyDecompressor( LZHL_DHANDLE );
 
 #ifdef __cplusplus
 }

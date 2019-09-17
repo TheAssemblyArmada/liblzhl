@@ -14,10 +14,26 @@ if(NOT LZHL_ENABLE_STATIC AND NOT LZHL_ENABLE_SHARED)
     set(LZHL_ENABLE_STATIC ON)
 endif()
 
+include(CheckCXXSourceCompiles)
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs)
 
 check_cxx_compiler_flag("-fvisibility=hidden" HAS_VISIBILITY)
+
+# Check if LD supports linker scripts.
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/conftest.map" "VERS_1 {
+        global: sym;
+};
+
+VERS_2 {
+        global: sym;
+} VERS_1;
+")
+set(CMAKE_REQUIRED_FLAGS_SAVE ${CMAKE_REQUIRED_FLAGS})
+set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} "-Wl,--version-script=${CMAKE_CURRENT_BINARY_DIR}/conftest.map")
+check_cxx_source_compiles("int main(int argc, char **argv){return 0;}" HAVE_LD_VERSION_SCRIPT)
+set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS_SAVE})
+file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/conftest.map")
 
 file(GLOB_RECURSE LZHL_SOURCES "src/*.cpp")
 
@@ -44,8 +60,16 @@ if(CMAKE_CONFIGURATION_TYPES)
     source_group("Public Header Files\\" FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h")
 endif()
 
+add_library(lzhl_object_lib OBJECT ${LZHL_SOURCES} ${LZHL_HEADERS} include/lzhl/lzhl.h)
+set_target_properties(lzhl_object_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(lzhl_object_lib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    PRIVATE src 
+)
+
 if(LZHL_ENABLE_STATIC)
-    add_library(lzhl_static_lib STATIC ${LZHL_SOURCES} ${LZHL_HEADERS} include/lzhl/lzhl.h)
+    add_library(lzhl_static_lib STATIC $<TARGET_OBJECTS:lzhl_object_lib>)
     set_target_properties(lzhl_static_lib PROPERTIES PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h OUTPUT_NAME lzhl)
     target_include_directories(lzhl_static_lib PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -57,21 +81,18 @@ if(LZHL_ENABLE_STATIC)
 endif()
 
 if(LZHL_ENABLE_SHARED)
-    add_library(lzhl_shared_lib SHARED ${LZHL_SOURCES} ${LZHL_HEADERS} include/lzhl/lzhl.h)
+    add_library(lzhl_shared_lib SHARED $<TARGET_OBJECTS:lzhl_object_lib>)
     set_target_properties(lzhl_shared_lib PROPERTIES 
         OUTPUT_NAME lzhl
         POSITION_INDEPENDENT_CODE ON
         PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h
         SOVERSION 1.0
-        VERSION 1.0.0
-        CXX_VISIBILITY_PRESET hidden)
-
-    if(WIN32)
+        VERSION 1.0.0)
+    
+    if(HAVE_LD_VERSION_SCRIPT)
+        target_link_libraries(lzhl_shared_lib PRIVATE "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/lzhl.map")
+    elseif(WIN32)
         target_sources(lzhl_shared_lib PRIVATE src/lzhl.def)
-    endif()
-
-    if(HAS_VISIBILITY)
-        target_compile_definitions(lzhl_shared_lib PRIVATE -DLZHL_SHARED)
     endif()
 
     set_target_properties(lzhl_shared_lib PROPERTIES ARCHIVE_OUTPUT_NAME lzhl_import)
