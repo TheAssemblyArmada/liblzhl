@@ -1,9 +1,0 @@
-EXPORTS
-LZHLCreateCompressor
-LZHLCompressorCalcMaxBuf
-LZHLCompress
-LZHLDestroyCompressor
-LZHLCreateDecompressor
-LZHLDecompress
-LZHLDecompressReset
-LZHLDestroyDecompressor

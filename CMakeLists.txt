@@ -1,115 +1,127 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.19)
 
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "No build type selected, default to Release")
-    set(CMAKE_BUILD_TYPE "Release")
+# Disable default MSVC warning level so we can set it ourselves.
+if(POLICY CMP0092)
+    cmake_policy(SET CMP0092 NEW)
 endif()
 
-project(lzhl VERSION 1.0.0 LANGUAGES CXX)
+# Default to release for single target generators if nothing specified.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo" FORCE)
+endif()
+
+# We don't support in tree builds, so help people make the right choice.
+if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
+    message(FATAL_ERROR "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt")
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+include(FeatureSummary)
+
+project(LZHL VERSION 1.0.0 LANGUAGES CXX)
+
+# Make sure symbols are not exported by default.
+if (NOT DEFINED CMAKE_CXX_VISIBILITY_PRESET AND
+    NOT DEFINED CMAKE_VISIBILITY_INLINES_HIDDEN)
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
+endif ()
 
 # configuration options
-option(LZHL_ENABLE_STATIC "Build static lzhl library." ON)
-option(LZHL_ENABLE_SHARED "Build shared lzhl library." OFF)
-if(NOT LZHL_ENABLE_STATIC AND NOT LZHL_ENABLE_SHARED)
-    set(LZHL_ENABLE_STATIC ON)
+if(DEFINED LZHL_SHARED_LIBS)
+    set(BUILD_SHARED_LIBS "${LZHL_SHARED_LIBS}")
 endif()
 
-include(CheckCXXSourceCompiles)
-include(CheckCXXCompilerFlag)
+add_feature_info(SharedLibs LZHL_SHARED_LIBS "Generate a shared library for LZHL")
+
 include(GNUInstallDirs)
+include(TargetExports)
 
-check_cxx_compiler_flag("-fvisibility=hidden" HAS_VISIBILITY)
-
-# Check if LD supports linker scripts.
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/conftest.map" "VERS_1 {
-        global: sym;
-};
-
-VERS_2 {
-        global: sym;
-} VERS_1;
-")
-set(CMAKE_REQUIRED_FLAGS_SAVE ${CMAKE_REQUIRED_FLAGS})
-set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} "-Wl,--version-script=${CMAKE_CURRENT_BINARY_DIR}/conftest.map")
-check_cxx_source_compiles("int main(int argc, char **argv){return 0;}" HAVE_LD_VERSION_SCRIPT)
-set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS_SAVE})
-file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/conftest.map")
-
-file(GLOB_RECURSE LZHL_SOURCES "src/*.cpp")
-
-if(CMAKE_CONFIGURATION_TYPES)
-    # Glob all the header files together to add to the project for msvc/xcode.
-    # Not ideal as CMake won't notice if you add any until something else prompts a CMake run
-    # but this is largely a convenience feature for MSVC/XCode users.
-    file(GLOB_RECURSE LZHL_HEADERS "src/*.h")
-
-    foreach(_LZHL_SOURCE IN ITEMS ${LZHL_SOURCES})
-        get_filename_component(_LZHL_SOURCE_PATH "${_LZHL_SOURCE}" PATH)
-        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/src" "" _LZHL_GROUP_PATH "${_LZHL_SOURCE_PATH}")
-        string(REPLACE "/" "\\" _LZHL_GROUP_PATH "${_LZHL_GROUP_PATH}")
-        source_group("Source Files\\${_LZHL_GROUP_PATH}" FILES "${_LZHL_SOURCE}")
-    endforeach()
-
-    foreach(_LZHL_HEADER IN ITEMS ${LZHL_HEADERS})
-        get_filename_component(_LZHL_HEADER_PATH "${_LZHL_HEADER}" PATH)
-        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/src" "" _LZHL_HGROUP_PATH "${_LZHL_HEADER_PATH}")
-        string(REPLACE "/" "\\" _LZHL_HGROUP_PATH "${_LZHL_HGROUP_PATH}")
-        source_group("Private Header Files\\${_LZHL_HGROUP_PATH}" FILES "${_LZHL_HEADER}")
-    endforeach()
-    
-    source_group("Public Header Files\\" FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h")
-endif()
-
-add_library(lzhl_object_lib OBJECT ${LZHL_SOURCES} ${LZHL_HEADERS} include/lzhl/lzhl.h)
-set_target_properties(lzhl_object_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(lzhl_object_lib PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src 
+add_library(lzhl
+    include/lzhl/lzhl.h
+    src/huff.cpp
+    src/lz.cpp
+    src/lzhl.cpp
+    src/_huff.h
+    src/_lz.h
+    src/_lzhl.h
 )
 
-if(LZHL_ENABLE_STATIC)
-    add_library(lzhl_static_lib STATIC $<TARGET_OBJECTS:lzhl_object_lib>)
-    set_target_properties(lzhl_static_lib PROPERTIES PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h OUTPUT_NAME lzhl)
-    target_include_directories(lzhl_static_lib PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        PRIVATE src 
-    )
+add_library(LZHL::LZHL ALIAS lzhl)
 
-    list(APPEND INSTALL_TARGETS lzhl_static_lib)
+if(BUILD_SHARED_LIBS)
+    set_target_properties(lzhl PROPERTIES POSITION_INDEPENDENT_CODE ON) 
+    set_target_properties(lzhl PROPERTIES ARCHIVE_OUTPUT_NAME lzhl.dll)
 endif()
 
-if(LZHL_ENABLE_SHARED)
-    add_library(lzhl_shared_lib SHARED $<TARGET_OBJECTS:lzhl_object_lib>)
-    set_target_properties(lzhl_shared_lib PROPERTIES 
-        OUTPUT_NAME lzhl
-        POSITION_INDEPENDENT_CODE ON
-        PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/lzhl/lzhl.h
-        SOVERSION 1.0
-        VERSION 1.0.0)
+# Set the compiler features expected/required
+target_compile_features(lzhl PUBLIC cxx_std_11)
+
+set_target_properties(lzhl PROPERTIES SOVERSION ${LZHL_VERSION_MAJOR} VERSION ${LZHL_VERSION})
+target_include_directories(lzhl PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+target_exports(lzhl SYMBOLS 
+    LZHLCreateCompressor
+    LZHLCompressorCalcMaxBuf
+    LZHLCompress
+    LZHLDestroyCompressor
+    LZHLCreateDecompressor
+    LZHLDecompress
+    LZHLDecompressReset
+    LZHLDestroyDecompressor
+)
+
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" is_top_level)
+option(LZHL_INCLUDE_PACKAGING "Include packaging rules for LZHL" "${is_top_level}")
+add_feature_info(Packaging LZHL_INCLUDE_PACKAGING "Generate packaging rules for LZHL")
+
+if(LZHL_INCLUDE_PACKAGING)
+    include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
+
+    if (NOT DEFINED LZHL_INSTALL_CMAKEDIR)
+       set(LZHL_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/LZHL" CACHE STRING "Path to LZHL CMake files")
+    endif ()
     
-    if(HAVE_LD_VERSION_SCRIPT)
-        target_link_libraries(lzhl_shared_lib PRIVATE "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/lzhl.map")
-    elseif(WIN32)
-        target_sources(lzhl_shared_lib PRIVATE src/lzhl.def)
+    install(TARGETS lzhl 
+        EXPORT LZHL_Targets
+        RUNTIME COMPONENT LZHL_Runtime
+        LIBRARY COMPONENT LZHL_Runtime
+        NAMELINK_COMPONENT LZHL_Development
+        ARCHIVE COMPONENT LZHL_Development
+        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+
+    install(DIRECTORY "${LZHL_SOURCE_DIR}/include/" "${LZHL_BINARY_DIR}/include/"
+        TYPE INCLUDE
+        COMPONENT LZHL_Development
+    )
+    
+    if(BUILD_SHARED_LIBS)
+        set(type shared)
+    else()
+        set(type static)
     endif()
 
-    set_target_properties(lzhl_shared_lib PROPERTIES ARCHIVE_OUTPUT_NAME lzhl_import)
-
-    target_include_directories(lzhl_shared_lib PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        PRIVATE src 
+    install(EXPORT LZHL_Targets
+        DESTINATION "${LZHL_INSTALL_CMAKEDIR}"
+        NAMESPACE LZHL::
+        FILE LZHL-${type}-targets.cmake
+        COMPONENT LZHL_Development
     )
     
-    list(APPEND INSTALL_TARGETS lzhl_shared_lib)
+    write_basic_package_version_file(
+        LZHLConfigVersion.cmake
+        COMPATIBILITY SameMajorVersion
+    )
+    
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/LZHLConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/LZHLConfigVersion.cmake"
+        DESTINATION "${LZHL_INSTALL_CMAKEDIR}"
+        COMPONENT LZHL_Development
+    )
 endif()
 
-install(TARGETS ${INSTALL_TARGETS}
-	EXPORT LzhlTargets
-	RUNTIME	DESTINATION			${CMAKE_INSTALL_BINDIR}
-	ARCHIVE DESTINATION			${CMAKE_INSTALL_LIBDIR}
-	LIBRARY DESTINATION			${CMAKE_INSTALL_LIBDIR}
-	PUBLIC_HEADER DESTINATION	${CMAKE_INSTALL_INCLUDEDIR}/lzhl
-)
+feature_summary(WHAT ENABLED_FEATURES DESCRIPTION "Enabled features:")
+feature_summary(WHAT DISABLED_FEATURES DESCRIPTION "Disabled features:")
